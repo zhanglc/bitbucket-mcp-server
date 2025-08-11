@@ -29,16 +29,16 @@
     "pull-request",
     "code-review"
   ],
-  "author": "Parth Dogra",
+  "author": "zhanglc77",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://git.pratiknarola.com/Pdogra/bitbucket-mcp-server"
+    "url": "https://github.com/zhanglc/bitbucket-mcp-server.git"
   },
   "bugs": {
-    "url": "https://git.pratiknarola.com/Pdogra/bitbucket-mcp-server/issues"
+    "url": "https://github.com/zhanglc/bitbucket-mcp-server/issues"
   },
-  "homepage": "https://git.pratiknarola.com/Pdogra/bitbucket-mcp-server#readme",
+  "homepage": "https://github.com/zhanglc/bitbucket-mcp-server#readme",
   "engines": {
     "node": ">=16.0.0"
   },

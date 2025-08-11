@@ -1,6 +1,0 @@
-{
-  "branches": [
-    "main",
-    { "pattern": "v*.*.*", "prerelease": false }
-  ]
-}
