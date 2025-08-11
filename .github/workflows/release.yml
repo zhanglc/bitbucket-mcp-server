@@ -3,8 +3,8 @@ name: CI - Semantic Release
 # This workflow is triggered on every push to the main branch
 # It analyzes commits and automatically releases a new version when needed
 on:
-    push:
-        branches: [main]
+  push:
+    tags: [ 'v*.*.*' ]
 
 jobs:
     release:
