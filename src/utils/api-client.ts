@@ -30,8 +30,8 @@ export class BitbucketApiClient {
     if (token) {
       // Bitbucket Server uses Bearer token
       axiosConfig.auth = {
-        username,
-        token, // token is used as password here
+        username: username,
+        password: token,
       };
     } else {
       // Bitbucket Cloud uses basic auth with app password
