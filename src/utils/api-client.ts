@@ -26,18 +26,21 @@ export class BitbucketApiClient {
       },
     };
 
-    // Use token auth for Bitbucket Server, basic auth for Cloud
+    // Basic auth for Cloud and Bitbucket Server
     if (token) {
-      // Bitbucket Server uses Bearer token
-      axiosConfig.auth = {
-        username: username,
-        password: token,
-      };
-    } else {
+      // Bitbucket Server uses basic auth with username:token
+      // Ensure we use the same format as curl -u 'username:token'
+      const auth = Buffer.from(`${username}:${token}`).toString('base64');
+      axiosConfig.headers['Authorization'] = `Basic ${auth}`;
+    } else if (password) {
       // Bitbucket Cloud uses basic auth with app password
+      const auth = Buffer.from(`${username}:${password}`).toString('base64');
+      axiosConfig.headers['Authorization'] = `Basic ${auth}`;
+    } else {
+      // Fallback to axios auth config
       axiosConfig.auth = {
         username,
-        password,
+        password: password || '',
       };
     }
 
