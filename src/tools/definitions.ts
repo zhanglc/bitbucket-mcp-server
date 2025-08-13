@@ -42,7 +42,11 @@ export const toolDefinitions = [
         },
         author: {
           type: 'string',
-          description: 'Filter by author username',
+          description: 'Filter by author username/email (Server: email format like "user@company.com", Cloud: username like "johnsmith")',
+        },
+        reviewer: {
+          type: 'string',
+          description: 'Filter by reviewer username/email (Server: email format like "user@company.com", Cloud: username like "johnsmith")',
         },
         limit: {
           type: 'number',

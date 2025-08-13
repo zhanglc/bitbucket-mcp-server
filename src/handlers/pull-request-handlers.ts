@@ -176,7 +176,7 @@ export class PullRequestHandlers {
       );
     }
 
-    const { workspace, repository, state = 'OPEN', author, limit = 25, start = 0 } = args;
+    const { workspace, repository, state = 'OPEN', author, reviewer, limit = 25, start = 0 } = args;
 
     try {
       let apiPath: string;
@@ -190,9 +190,20 @@ export class PullRequestHandlers {
           limit,
           start,
         };
+        
+        // Handle participant filters according to Bitbucket Server API
+        let filterIndex = 1;
+        
         if (author) {
-          params['role.1'] = 'AUTHOR';
-          params['username.1'] = author;
+          params[`username.${filterIndex}`] = author;
+          params[`role.${filterIndex}`] = 'AUTHOR';
+          filterIndex++;
+        }
+        
+        if (reviewer) {
+          params[`username.${filterIndex}`] = reviewer;
+          params[`role.${filterIndex}`] = 'REVIEWER';
+          filterIndex++;
         }
       } else {
         // Bitbucket Cloud API
@@ -202,8 +213,18 @@ export class PullRequestHandlers {
           pagelen: limit,
           page: Math.floor(start / limit) + 1,
         };
+        
+        // Build query string for Cloud API
+        let queryParts: string[] = [];
         if (author) {
-          params['q'] = `author.username="${author}"`;
+          queryParts.push(`author.username="${author}"`);
+        }
+        if (reviewer) {
+          queryParts.push(`reviewers.username="${reviewer}"`);
+        }
+        
+        if (queryParts.length > 0) {
+          params['q'] = queryParts.join(' AND ');
         }
       }
 

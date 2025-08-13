@@ -15,6 +15,7 @@ export const isListPullRequestsArgs = (
   repository: string; 
   state?: string; 
   author?: string;
+  reviewer?: string;
   limit?: number;
   start?: number;
 } =>
@@ -24,6 +25,7 @@ export const isListPullRequestsArgs = (
   typeof args.repository === 'string' &&
   (args.state === undefined || typeof args.state === 'string') &&
   (args.author === undefined || typeof args.author === 'string') &&
+  (args.reviewer === undefined || typeof args.reviewer === 'string') &&
   (args.limit === undefined || typeof args.limit === 'number') &&
   (args.start === undefined || typeof args.start === 'number');
 
