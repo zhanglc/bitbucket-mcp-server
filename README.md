@@ -1,6 +1,6 @@
 # Bitbucket MCP Server
 
-[![npm version](https://badge.fury.io/js/@nexus2520%2Fbitbucket-mcp-server.svg)](https://www.npmjs.com/package/@nexus2520/bitbucket-mcp-server)
+[![npm version](https://badge.fury.io/js/@zhanglc77%2Fbitbucket-mcp-server.svg)](https://www.npmjs.com/package/@zhanglc77/bitbucket-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 An MCP (Model Context Protocol) server that provides tools for interacting with the Bitbucket API, supporting both Bitbucket Cloud and Bitbucket Server.
@@ -11,7 +11,7 @@ An MCP (Model Context Protocol) server that provides tools for interacting with 
 
 #### Core PR Lifecycle Tools
 - `get_pull_request` - Retrieve detailed information about a pull request
-- `list_pull_requests` - List pull requests with filters (state, author, pagination)
+- `list_pull_requests` - List pull requests with filters (state, author, reviewer, pagination)
 - `create_pull_request` - Create new pull requests
 - `update_pull_request` - Update PR details (title, description, reviewers, destination branch)
 - `add_comment` - Add comments to pull requests (supports replies)
@@ -52,7 +52,7 @@ The easiest way to use this MCP server is directly with npx:
       "command": "npx",
       "args": [
         "-y",
-        "@nexus2520/bitbucket-mcp-server"
+        "@zhanglc77/bitbucket-mcp-server"
       ],
       "env": {
         "BITBUCKET_USERNAME": "your-username",
@@ -71,7 +71,7 @@ For Bitbucket Server:
       "command": "npx",
       "args": [
         "-y",
-        "@nexus2520/bitbucket-mcp-server"
+        "@zhanglc77/bitbucket-mcp-server"
       ],
       "env": {
         "BITBUCKET_USERNAME": "your.email@company.com",
@@ -309,6 +309,7 @@ Example response:
     "repository": "my-repo",
     "state": "OPEN",  // Optional: OPEN, MERGED, DECLINED, ALL (default: OPEN)
     "author": "username",  // Optional: filter by author (see note below)
+    "reviewer": "username",  // Optional: filter by reviewer (see note below)
     "limit": 25,  // Optional: max results per page (default: 25)
     "start": 0  // Optional: pagination start index (default: 0)
   }
@@ -320,9 +321,46 @@ Returns a paginated list of pull requests with:
 - Total count of matching PRs
 - Pagination info (has_more, next_start)
 
-**Note on Author Filter:**
+**Note on Author and Reviewer Filters:**
 - For Bitbucket Cloud: Use the username (e.g., "johndoe")
 - For Bitbucket Server: Use the full email address (e.g., "john.doe@company.com")
+- Both `author` and `reviewer` filters can be used together for more precise filtering
+
+**Usage Examples:**
+
+```typescript
+// List all open PRs authored by a specific user
+{
+  "tool": "list_pull_requests",
+  "arguments": {
+    "workspace": "PROJ",
+    "repository": "my-repo",
+    "author": "john.doe@company.com"
+  }
+}
+
+// List all PRs where a specific user is a reviewer
+{
+  "tool": "list_pull_requests",
+  "arguments": {
+    "workspace": "PROJ",
+    "repository": "my-repo",
+    "reviewer": "jane.smith@company.com"
+  }
+}
+
+// List merged PRs authored by John and reviewed by Jane
+{
+  "tool": "list_pull_requests",
+  "arguments": {
+    "workspace": "PROJ",
+    "repository": "my-repo",
+    "state": "MERGED",
+    "author": "john.doe@company.com",
+    "reviewer": "jane.smith@company.com"
+  }
+}
+```
 
 ### Create Pull Request
 

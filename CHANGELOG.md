@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2025-08-13
+
+### Added
+- **Enhanced pull request filtering**:
+  - Added `reviewer` parameter to `list_pull_requests` tool for filtering PRs by reviewer
+  - Support for both Bitbucket Server and Cloud API reviewer filtering
+  - Participant filters implementation for Bitbucket Server API
+  - Query string building for Bitbucket Cloud API
+
+### Changed
+- **Documentation improvements**:
+  - Updated tool definitions to clarify username format differences
+  - Server environment uses email format (user@company.com)
+  - Cloud environment uses username format (johnsmith)
+  - Enhanced parameter descriptions for better clarity
+
+### Technical
+- Updated TypeScript type guards to include reviewer parameter
+- Maintained backward compatibility with existing functionality
+
 ## [1.0.1] - 2025-08-08
 
 ### Fixed
