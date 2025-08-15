@@ -21,6 +21,7 @@ export class FileHandlers {
     '.log': -100  // Last 100 lines for logs
   };
 
+
   constructor(
     private apiClient: BitbucketApiClient,
     private baseUrl: string
@@ -340,10 +341,10 @@ export class FileHandlers {
     if (fileSize < 50 * 1024) { // 50KB
       return { full: true };
     }
-    
+
     const ext = path.extname(filePath).toLowerCase();
     const defaultLines = this.DEFAULT_LINES_BY_EXT[ext] || 500;
-    
+
     return {
       start: defaultLines < 0 ? defaultLines : 1,
       count: Math.abs(defaultLines)

@@ -7,6 +7,8 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
+import pkg from '../package.json';
+const version = pkg.version;
 
 import { BitbucketApiClient } from './utils/api-client.js';
 import { PullRequestHandlers } from './handlers/pull-request-handlers.js';
@@ -42,7 +44,7 @@ class BitbucketMCPServer {
     this.server = new Server(
       {
         name: 'bitbucket-mcp-server',
-        version: '1.0.1',
+        version: version,
       },
       {
         capabilities: {
