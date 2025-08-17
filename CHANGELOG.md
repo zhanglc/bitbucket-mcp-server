@@ -31,11 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `RESOURCES_GUIDE.md` - Migration guide and comparison between tools vs resources
   - `SCHEMA_RESOURCES.md` - Architecture documentation for schema discovery system
 
-- **Test Scripts**:
-  - `test-field-filtering.js` - Validates field filtering functionality across different patterns
-  - `test-schema-discovery.js` - Tests schema resource discovery and metadata retrieval
-  - `test-static-schema.js` - Validates static schema index functionality
-
 ### Changed
 - **Enhanced README.md**:
   - Added comprehensive documentation for new Resources and Field Filtering features
