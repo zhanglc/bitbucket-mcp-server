@@ -1111,6 +1111,73 @@ Example responses:
 }
 ```
 
+## Resources and Field Filtering
+
+In addition to tools, this MCP server provides **resources** that can be accessed directly via URI patterns with advanced field filtering capabilities.
+
+### Resource URIs
+
+Resources use the format: `bitbucket://{workspace}/{repo}/{type}/{path}`
+
+Examples:
+- `bitbucket://PROJ/my-repo/file/src/index.js` - Get file content
+- `bitbucket://PROJ/my-repo/pr/123` - Get pull request details
+- `bitbucket://PROJ/my-repo/branches` - List all branches
+- `bitbucket://PROJ/my-repo/search?query=function` - Search code
+
+### Field Filtering Support
+
+All resources support field-level filtering to return only the data you need:
+
+#### Query Parameters
+- `fields` - Comma-separated list of fields to include (supports dot notation and wildcards)
+- `exclude` - Comma-separated list of fields to exclude  
+- `format` - Predefined response format: `full`, `minimal`, `summary`, `metadata`
+
+#### Examples
+
+**Get only PR title and state:**
+```
+bitbucket://PROJ/my-repo/pr/123?fields=id,title,state
+```
+
+**Get PR with reviewer names only:**
+```
+bitbucket://PROJ/my-repo/pr/123?fields=id,title,reviewers.*.display_name
+```
+
+**Get minimal PR information:**
+```
+bitbucket://PROJ/my-repo/pr/123?format=minimal
+```
+
+**Get file listing with names and sizes only:**
+```
+bitbucket://PROJ/my-repo/dir/src?fields=path,contents.*.name,contents.*.size
+```
+
+**Exclude verbose fields:**
+```
+bitbucket://PROJ/my-repo/pr/123?exclude=description,comments
+```
+
+### Supported Field Patterns
+
+- **Basic fields**: `id`, `title`, `state`
+- **Nested fields**: `author.display_name`, `source.branch.name`
+- **Array wildcards**: `reviewers.*.display_name` (all reviewers)
+- **Array indices**: `reviewers.0.display_name` (first reviewer)
+- **Combined**: `id,title,reviewers.*.approved,source.branch.name`
+
+### Performance Benefits
+
+Field filtering reduces response size and improves performance by:
+- Returning only necessary data
+- Reducing network transfer time
+- Minimizing client-side processing
+
+For detailed examples and advanced usage patterns, see [FIELD_FILTERING_GUIDE.md](./FIELD_FILTERING_GUIDE.md).
+
 ## Development
 
 - `npm run dev` - Watch mode for development

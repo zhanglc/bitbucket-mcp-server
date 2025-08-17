@@ -5,6 +5,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2025-01-XX
+
+### Added
+- **MCP Resources Support**:
+  - Added comprehensive MCP Resources implementation with URI-based data access
+  - Resource templates for file content, directory listings, pull requests, branches, and search
+  - Support for all major Bitbucket data types through intuitive URI patterns
+  - Backwards compatible with existing tools - resources provide alternative access pattern
+
+- **Advanced Field Filtering System**:
+  - Field-level filtering for all resource responses using `fields`, `exclude`, and `format` parameters
+  - Support for dot notation (e.g., `author.display_name`) and wildcards (e.g., `reviewers.*.approved`)
+  - Predefined response formats: `minimal`, `summary`, `metadata`, and `full`
+  - Intelligent field extraction based on resource type detection
+
+- **Resource Schema Discovery**:
+  - Static schema index resource (`bitbucket://schema/index`) for resource type discovery
+  - Detailed schema resources for each Bitbucket resource type with field metadata
+  - Field-level schema information including types, descriptions, examples, and validation rules
+  - Validation schema endpoints for different operations (create, update, read)
+
+- **New Documentation**:
+  - `FIELD_FILTERING_GUIDE.md` - Comprehensive guide for using field filtering with examples
+  - `RESOURCES_GUIDE.md` - Migration guide and comparison between tools vs resources
+  - `SCHEMA_RESOURCES.md` - Architecture documentation for schema discovery system
+
+- **Test Scripts**:
+  - `test-field-filtering.js` - Validates field filtering functionality across different patterns
+  - `test-schema-discovery.js` - Tests schema resource discovery and metadata retrieval
+  - `test-static-schema.js` - Validates static schema index functionality
+
+### Changed
+- **Enhanced README.md**:
+  - Added comprehensive documentation for new Resources and Field Filtering features
+  - Updated examples to show both tool and resource access patterns
+  - Performance benefits section highlighting field filtering advantages
+
+- **Server Architecture**:
+  - Extended main server (`src/index.ts`) to support MCP Resources capability
+  - Added resource handlers integration with field filtering support
+  - Static schema index resource available in `listResources` response
+
+### Technical
+- **New Resource Infrastructure**:
+  - `src/resources/handlers.ts` - Central resource request routing and field filtering engine
+  - `src/resources/schema-handlers.ts` - Schema resource request handlers
+  - `src/resources/field-schemas.ts` - Static field definitions for all Bitbucket resource types
+  - `src/resources/templates.ts` - Resource template definitions for discovery
+- **Field Filtering Engine**:
+  - Support for nested field extraction and wildcard array field selection
+  - Intelligent resource type detection for format-specific field extraction
+  - Performance-optimized field filtering with minimal data processing overhead
+- **Schema System**:
+  - Comprehensive static schemas for repositories, pull requests, commits, branches, files, issues, users, projects, and comments
+  - Resource categorization (core vs extended) for better organization
+  - Validation rule generation based on operation context
+
+### Development
+- **Workflow Enhancements**:
+  - Added `.github/prompts/code-review.prompt.md` for automated code review workflows
+  - Created `.releaserc` configuration for release management
+  - Enhanced development tooling and documentation structure
+
 ## [1.0.5] - 2025-08-13
 
 ### Added

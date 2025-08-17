@@ -6,6 +6,8 @@ import {
   ErrorCode,
   ListToolsRequestSchema,
   McpError,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import pkg from '../package.json';
 const version = pkg.version;
@@ -17,6 +19,9 @@ import { ReviewHandlers } from './handlers/review-handlers.js';
 import { FileHandlers } from './handlers/file-handlers.js';
 import { SearchHandlers } from './handlers/search-handlers.js';
 import { toolDefinitions } from './tools/definitions.js';
+import { resourceTemplates } from './resources/templates.js';
+import { ResourceHandlers } from './resources/handlers.js';
+import { getResourceTypeIndex } from './resources/field-schemas.js';
 
 // Get environment variables
 const BITBUCKET_USERNAME = process.env.BITBUCKET_USERNAME;
@@ -39,6 +44,7 @@ class BitbucketMCPServer {
   private reviewHandlers: ReviewHandlers;
   private fileHandlers: FileHandlers;
   private searchHandlers: SearchHandlers;
+  private resourceHandlers: ResourceHandlers;
 
   constructor() {
     this.server = new Server(
@@ -49,6 +55,7 @@ class BitbucketMCPServer {
       {
         capabilities: {
           tools: {},
+          resources: {},
         },
       }
     );
@@ -72,6 +79,16 @@ class BitbucketMCPServer {
     this.fileHandlers = new FileHandlers(this.apiClient, BITBUCKET_BASE_URL);
     this.searchHandlers = new SearchHandlers(this.apiClient, BITBUCKET_BASE_URL);
 
+    // Initialize resource handlers
+    this.resourceHandlers = new ResourceHandlers(
+      this.apiClient,
+      this.pullRequestHandlers,
+      this.branchHandlers,
+      this.fileHandlers,
+      this.searchHandlers,
+      this.reviewHandlers
+    );
+
     this.setupToolHandlers();
 
     // Error handling
@@ -87,6 +104,68 @@ class BitbucketMCPServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: toolDefinitions,
     }));
+
+    // List available resources (Stage 1 scaffold)
+    this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
+      return {
+        resources: [
+          {
+            uri: 'bitbucket://schema/index',
+            name: 'Schema Index',
+            description: 'Index of all available Bitbucket resource types',
+            mimeType: 'application/json'
+          }
+        ],
+        resourceTemplates: resourceTemplates,
+      };
+    });
+
+    // Handle resource reads (Stage 2 implementation)
+    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+      try {
+        // Special handling for static schema index resource
+        if (request.params.uri === 'bitbucket://schema/index') {
+          // Static content - no query parameters supported
+          const index = getResourceTypeIndex();
+          
+          return {
+            contents: [
+              {
+                uri: request.params.uri,
+                mimeType: 'application/json',
+                text: JSON.stringify({
+                  schemaVersion: '1.0.0',
+                  totalTypes: index.length,
+                  resourceTypes: index,
+                  note: 'This is a static index of available resource types. For detailed schemas, use bitbucket://schema/{resource_type}',
+                  lastUpdated: new Date().toISOString()
+                }, null, 2),
+              },
+            ],
+          };
+        }
+        
+        const result = await this.resourceHandlers.handleResourceRead(request.params.uri);
+        return this.convertToolResponseToResource(request.params.uri, result);
+      } catch (error) {
+        // Fallback to placeholder for unimplemented resources
+        const uri = request.params.uri;
+        return {
+          contents: [
+            {
+              uri,
+              mimeType: 'application/json',
+              text: JSON.stringify({
+                error: 'Resource retrieval failed',
+                uri,
+                message: error instanceof Error ? error.message : 'Unknown error',
+                note: 'This resource may not be fully implemented yet'
+              }, null, 2),
+            },
+          ],
+        };
+      }
+    });
 
     // Handle tool calls
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -146,6 +225,23 @@ class BitbucketMCPServer {
           );
       }
     });
+  }
+
+  /**
+   * Convert tool response to resource response format
+   */
+  private convertToolResponseToResource(uri: string, toolResponse: any): any {
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: 'application/json',
+          text: Array.isArray(toolResponse.content) 
+            ? toolResponse.content[0].text 
+            : JSON.stringify(toolResponse, null, 2),
+        },
+      ],
+    };
   }
 
   async run() {
