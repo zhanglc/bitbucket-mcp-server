@@ -9,7 +9,10 @@ import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import pkg from '../package.json';
+
+// Import package.json version safely for ESM
+import { readFileSync } from 'fs';
+const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
 const version = pkg.version;
 
 import { BitbucketApiClient } from './utils/api-client.js';
