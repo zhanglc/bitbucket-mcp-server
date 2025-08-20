@@ -24,6 +24,7 @@ import { FileHandlers } from './handlers/file-handlers.js';
 import { SearchHandlers } from './handlers/search-handlers.js';
 import { toolDefinitions } from './tools/definitions.js';
 import { resourceTemplates } from './resources/templates.js';
+import { staticResources } from './resources/static-resources.js';
 import { ResourceHandlers } from './resources/handlers.js';
 import { getResourceTypeIndex } from './resources/field-schemas.js';
 
@@ -40,7 +41,7 @@ if (!BITBUCKET_USERNAME || (!BITBUCKET_APP_PASSWORD && !BITBUCKET_TOKEN)) {
   process.exit(1);
 }
 
-class BitbucketMCPServer {
+export class BitbucketMCPServer {
   private server: Server;
   private apiClient: BitbucketApiClient;
   private pullRequestHandlers: PullRequestHandlers;
@@ -109,17 +110,10 @@ class BitbucketMCPServer {
       tools: toolDefinitions,
     }));
 
-    // List available resources (Stage 1 scaffold)
+    // List available static resources (MCP compliant)
     this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
       return {
-        resources: [
-          {
-            uri: 'bitbucket://schema/index',
-            name: 'Schema Index',
-            description: 'Index of all available Bitbucket resource types',
-            mimeType: 'application/json'
-          }
-        ]
+        resources: staticResources
       };
     });
 
@@ -138,21 +132,6 @@ class BitbucketMCPServer {
           // Static content - no query parameters supported
           const index = getResourceTypeIndex();
           
-          // Add dynamic resource information from templates
-          const dynamicResources = resourceTemplates.map(template => {
-            const schema = template.inputSchema as any;
-            return {
-              name: template.name,
-              uriTemplate: template.uriTemplate,
-              description: template.description,
-              requiredParams: schema.required || [],
-              optionalParams: Object.keys(schema.properties || {}).filter(
-                (key: string) => !schema.required?.includes(key)
-              ),
-              examples: this.generateResourceExamples(template)
-            };
-          });
-          
           return {
             contents: [
               {
@@ -162,17 +141,12 @@ class BitbucketMCPServer {
                   schemaVersion: version,
                   totalTypes: index.length,
                   resourceTypes: index,
-                  dynamicResources: {
-                    count: dynamicResources.length,
-                    resources: dynamicResources,
-                    usage: {
-                      note: "Use these URI templates to access specific resources",
-                      fieldFiltering: "Add ?fields=field1,field2 to limit response fields",
-                      formatOptions: "Add ?format=minimal|summary|metadata for different detail levels",
-                      examples: "See the examples section for each resource type"
-                    }
+                  note: 'This index contains static field schemas. For dynamic resource access patterns, use the resource templates via ListResourceTemplates.',
+                  usage: {
+                    fieldFiltering: "Add ?fields=field1,field2 to limit response fields",
+                    formatOptions: "Add ?format=minimal|summary|metadata for different detail levels",
+                    resourceTemplates: "Use ListResourceTemplates to discover dynamic resource patterns"
                   },
-                  note: 'This index includes both static schema resources and dynamic data resources. For detailed schemas, use bitbucket://schema/{resource_type}',
                   lastUpdated: new Date().toISOString()
                 }, null, 2),
               },
@@ -263,109 +237,6 @@ class BitbucketMCPServer {
     });
   }
 
-  /**
-   * Generate example URIs for a resource template
-   */
-  private generateResourceExamples(template: any): string[] {
-    const examples: string[] = [];
-    
-    switch (template.name) {
-      case 'repository-file':
-        examples.push(
-          'bitbucket://myproject/myrepo/file/src/index.ts',
-          'bitbucket://myproject/myrepo/file/README.md?ref=develop',
-          'bitbucket://myproject/myrepo/file/config.json?start_line=10&line_count=20'
-        );
-        break;
-      case 'repository-directory':
-        examples.push(
-          'bitbucket://myproject/myrepo/dir/',
-          'bitbucket://myproject/myrepo/dir/src',
-          'bitbucket://myproject/myrepo/dir/src/components?ref=feature-branch'
-        );
-        break;
-      case 'pull-request':
-        examples.push(
-          'bitbucket://myproject/myrepo/pull-request/123',
-          'bitbucket://myproject/myrepo/pull-request/456?include_comments=true',
-          'bitbucket://myproject/myrepo/pull-request/789?fields=id,title,state,author'
-        );
-        break;
-      case 'pull-request-diff':
-        examples.push(
-          'bitbucket://myproject/myrepo/pull-request/123/diff',
-          'bitbucket://myproject/myrepo/pull-request/123/diff?context=5',
-          'bitbucket://myproject/myrepo/pull-request/123/diff?mode=structured'
-        );
-        break;
-      case 'pull-request-diff-file':
-        examples.push(
-          'bitbucket://myproject/myrepo/pull-request/123/diff/src/index.ts',
-          'bitbucket://myproject/myrepo/pull-request/123/diff/README.md?context=3'
-        );
-        break;
-      case 'pull-request-commits':
-        examples.push(
-          'bitbucket://myproject/myrepo/pull-request/123/commits',
-          'bitbucket://myproject/myrepo/pull-request/123/commits?limit=10',
-          'bitbucket://myproject/myrepo/pull-request/123/commits?include_changes=true'
-        );
-        break;
-      case 'repository-branches':
-        examples.push(
-          'bitbucket://myproject/myrepo/branches',
-          'bitbucket://myproject/myrepo/branches?filter=feature*',
-          'bitbucket://myproject/myrepo/branches?limit=20&fields=name,target'
-        );
-        break;
-      case 'repository-branch':
-        examples.push(
-          'bitbucket://myproject/myrepo/branch/main',
-          'bitbucket://myproject/myrepo/branch/develop?include_commits=true',
-          'bitbucket://myproject/myrepo/branch/feature-xyz?commit_limit=5'
-        );
-        break;
-      case 'repository-search':
-        examples.push(
-          'bitbucket://myproject/myrepo/search?query=function+authenticate',
-          'bitbucket://myproject/myrepo/search?query=TODO&file_extensions=.ts,.js',
-          'bitbucket://myproject/myrepo/search?query=config&include_paths=src/**'
-        );
-        break;
-      case 'pull-requests-list':
-        examples.push(
-          'bitbucket://myproject/myrepo/pull-requests',
-          'bitbucket://myproject/myrepo/pull-requests?state=MERGED&limit=50',
-          'bitbucket://myproject/myrepo/pull-requests?author=john.doe&state=OPEN'
-        );
-        break;
-      case 'resource-schema':
-        examples.push(
-          'bitbucket://schema/repository',
-          'bitbucket://schema/pullrequest',
-          'bitbucket://schema/commit?field_details=minimal'
-        );
-        break;
-      case 'field-schema':
-        examples.push(
-          'bitbucket://schema/pullrequest/field/title',
-          'bitbucket://schema/repository/field/name',
-          'bitbucket://schema/commit/field/author?include_nested=true'
-        );
-        break;
-      case 'resource-validation':
-        examples.push(
-          'bitbucket://schema/validation/pullrequest',
-          'bitbucket://schema/validation/repository?operation=create',
-          'bitbucket://schema/validation/commit?operation=read'
-        );
-        break;
-      default:
-        examples.push(template.uriTemplate.replace(/\{[^}]+\}/g, 'example-value'));
-    }
-    
-    return examples;
-  }
 
   /**
    * Convert tool response to resource response format

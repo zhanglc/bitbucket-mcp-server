@@ -473,9 +473,126 @@ export const pullRequestSchema: ResourceSchema = {
       description: 'Related links for pull request resources (Cloud only)',
       readonly: true,
       nested: true
-    }
+    },
 
-    // Note: Server-specific PR fields would be added here when we test PR responses from server
+    // Server-specific fields
+    {
+      name: 'version',
+      type: 'number',
+      description: 'Pull request version number for optimistic locking (Server only)',
+      readonly: true,
+      example: 40
+    },
+    {
+      name: 'open',
+      type: 'boolean',
+      description: 'Whether the pull request is open (Server only)',
+      readonly: true,
+      example: true
+    },
+    {
+      name: 'closed',
+      type: 'boolean',
+      description: 'Whether the pull request is closed (Server only)',
+      readonly: true,
+      example: false
+    },
+    {
+      name: 'locked',
+      type: 'boolean',
+      description: 'Whether the pull request is locked from further changes (Server only)',
+      readonly: true,
+      example: false
+    },
+    {
+      name: 'createdDate',
+      type: 'number',
+      description: 'Creation timestamp in milliseconds since epoch (Server only)',
+      readonly: true,
+      example: 1755673199103
+    },
+    {
+      name: 'updatedDate',
+      type: 'number',
+      description: 'Last update timestamp in milliseconds since epoch (Server only)',
+      readonly: true,
+      example: 1755689018998
+    },
+    {
+      name: 'fromRef',
+      type: 'object',
+      description: 'Source branch reference object with repository information (Server only)',
+      nested: true,
+      readonly: true,
+      example: { 
+        displayId: 'feature-branch', 
+        latestCommit: 'abc123def456',
+        repository: { slug: 'my-repo' }
+      }
+    },
+    {
+      name: 'toRef',
+      type: 'object',
+      description: 'Destination branch reference object with repository information (Server only)',
+      nested: true,
+      readonly: true,
+      example: { 
+        displayId: 'main', 
+        latestCommit: 'def456abc123',
+        repository: { slug: 'my-repo' }
+      }
+    },
+    {
+      name: 'author',
+      type: 'object',
+      description: 'Pull request author object with user details and approval status (Server only)',
+      nested: true,
+      readonly: true,
+      example: {
+        user: { displayName: 'John Developer', emailAddress: 'john@company.com' },
+        role: 'AUTHOR',
+        approved: false,
+        status: 'UNAPPROVED'
+      }
+    },
+    {
+      name: 'reviewers',
+      type: 'array',
+      description: 'Array of reviewer objects with user details and approval status (Server only)',
+      nested: true,
+      example: [{
+        user: { displayName: 'Jane Reviewer', emailAddress: 'jane@company.com' },
+        role: 'REVIEWER',
+        approved: true,
+        status: 'APPROVED'
+      }]
+    },
+    {
+      name: 'participants',
+      type: 'array',
+      description: 'Array of participant objects for users involved in the pull request (Server only)',
+      nested: true,
+      readonly: true,
+      example: [{
+        user: { displayName: 'Participant Name', emailAddress: 'participant@company.com' },
+        role: 'PARTICIPANT',
+        approved: false,
+        status: 'UNAPPROVED'
+      }]
+    },
+    {
+      name: 'properties',
+      type: 'object',
+      description: 'Additional properties including merge result, cycle time, and task counts (Server only)',
+      nested: true,
+      readonly: true,
+      example: {
+        mergeResult: { outcome: 'CLEAN', current: true },
+        commentCount: 5,
+        openTaskCount: 2,
+        resolvedTaskCount: 0
+      }
+    }
   ]
 };
 

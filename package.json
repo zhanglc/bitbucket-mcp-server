@@ -22,6 +22,8 @@
     "test:coverage": "jest --coverage",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
+    "test:resources": "jest tests/unit/resources tests/integration/resources",
+    "test:resource-discovery": "jest tests/unit/resources/resource-discovery.test.ts tests/integration/resources/static-resource-access.test.ts",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
