@@ -1,4 +1,5 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+import { BitbucketURI } from '../utils/bitbucket-uri.js';
 import { 
   getAllResourceTypes, 
   getResourceTypesByCategory, 
@@ -172,42 +173,55 @@ export class SchemaHandlers {
    * Parse schema URI and route to appropriate handler
    */
   async handleSchemaResource(uri: string): Promise<any> {
-    const url = new URL(uri);
-    const pathParts = url.pathname.split('/').filter(p => p);
-    
-    if (pathParts.length < 2 || pathParts[0] !== 'schema') {
-      throw new McpError(ErrorCode.InvalidParams, `Invalid schema URI: ${uri}`);
-    }
-    
-    // Parse query parameters
-    const params: Record<string, any> = {};
-    url.searchParams.forEach((value, key) => {
-      params[key] = value;
-    });
-    
-    const [, schemaType, ...rest] = pathParts;
-    
-    switch (schemaType) {
-      case 'index':
-        return this.handleSchemaIndex(params);
-        
-      case 'validation':
-        if (rest.length < 1) {
-          throw new McpError(ErrorCode.InvalidParams, 'Resource type required for validation schema');
-        }
-        return this.handleValidationSchema(uri, rest[0], params);
-        
-      default:
-        // Check if it's a resource type schema
-        if (rest.length === 0) {
-          // bitbucket://schema/{resource_type}
-          return this.handleResourceSchema(uri, schemaType, params);
-        } else if (rest.length === 2 && rest[0] === 'field') {
-          // bitbucket://schema/{resource_type}/field/{field_name}
-          return this.handleFieldSchema(uri, schemaType, rest[1], params);
-        } else {
-          throw new McpError(ErrorCode.InvalidParams, `Invalid schema URI format: ${uri}`);
-        }
+    try {
+      const bitbucketUri = new BitbucketURI(uri);
+      
+      if (!bitbucketUri.isSchemaUri()) {
+        throw new McpError(ErrorCode.InvalidParams, `Not a schema URI: ${uri}`);
+      }
+      
+      const resourcePath = bitbucketUri.resourcePath;
+      if (!resourcePath) {
+        throw new McpError(ErrorCode.InvalidParams, `Schema resource path required: ${uri}`);
+      }
+      
+      const pathParts = resourcePath.split('/').filter(p => p);
+      const params = bitbucketUri.params;
+      
+      if (pathParts.length === 0) {
+        throw new McpError(ErrorCode.InvalidParams, `Schema resource type required: ${uri}`);
+      }
+      
+      const [schemaType, ...rest] = pathParts;
+      
+      switch (schemaType) {
+        case 'index':
+          return this.handleSchemaIndex(params);
+          
+        case 'validation':
+          if (rest.length < 1) {
+            throw new McpError(ErrorCode.InvalidParams, 'Resource type required for validation schema');
+          }
+          return this.handleValidationSchema(uri, rest[0], params);
+          
+        default:
+          // Check if it's a resource type schema
+          if (rest.length === 0) {
+            // bitbucket://schema/{resource_type}
+            return this.handleResourceSchema(uri, schemaType, params);
+          } else if (rest.length === 2 && rest[0] === 'field') {
+            // bitbucket://schema/{resource_type}/field/{field_name}
+            return this.handleFieldSchema(uri, schemaType, rest[1], params);
+          } else {
+            throw new McpError(ErrorCode.InvalidParams, `Invalid schema URI format: ${uri}`);
+          }
+      }
+    } catch (error) {
+      if (error instanceof McpError) {
+        throw error;
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new McpError(ErrorCode.InvalidParams, `Failed to parse schema URI: ${uri}. ${errorMessage}`);
     }
   }
 }

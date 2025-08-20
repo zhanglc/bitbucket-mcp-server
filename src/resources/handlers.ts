@@ -1,5 +1,6 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { BitbucketApiClient } from '../utils/api-client.js';
+import { BitbucketURI } from '../utils/bitbucket-uri.js';
 import { PullRequestHandlers } from '../handlers/pull-request-handlers.js';
 import { BranchHandlers } from '../handlers/branch-handlers.js';
 import { FileHandlers } from '../handlers/file-handlers.js';
@@ -24,59 +25,8 @@ export class ResourceHandlers {
   /**
    * Parse a Bitbucket resource URI and extract components
    */
-  private parseResourceUri(uri: string): {
-    scheme: string;
-    workspace?: string;
-    repo?: string;
-    resourceType: string;
-    resourcePath?: string;
-    params: Record<string, string>;
-  } {
-    const url = new URL(uri);
-    if (url.protocol !== 'bitbucket:') {
-      throw new McpError(ErrorCode.InvalidParams, `Invalid URI scheme: ${url.protocol}`);
-    }
-
-    const pathParts = url.pathname.split('/').filter(p => p);
-    
-    // Special handling for schema URIs: bitbucket://schema/...
-    if (pathParts.length >= 1 && pathParts[0] === 'schema') {
-      // Parse query parameters
-      const params: Record<string, string> = {};
-      url.searchParams.forEach((value, key) => {
-        params[key] = value;
-      });
-      
-      return {
-        scheme: url.protocol,
-        resourceType: 'schema',
-        resourcePath: pathParts.slice(1).join('/'),
-        params
-      };
-    }
-    
-    // Regular workspace/repo URIs: bitbucket://workspace/repo/resourceType/...
-    if (pathParts.length < 3) {
-      throw new McpError(ErrorCode.InvalidParams, `Invalid URI format: ${uri}`);
-    }
-
-    const [workspace, repo, resourceType, ...resourcePathParts] = pathParts;
-    const resourcePath = resourcePathParts.join('/');
-
-    // Parse query parameters
-    const params: Record<string, string> = {};
-    url.searchParams.forEach((value, key) => {
-      params[key] = value;
-    });
-
-    return {
-      scheme: url.protocol,
-      workspace,
-      repo,
-      resourceType,
-      resourcePath: resourcePath || undefined,
-      params
-    };
+  private parseResourceUri(uri: string): BitbucketURI {
+    return new BitbucketURI(uri);
   }
 
   /**
@@ -101,7 +51,12 @@ export class ResourceHandlers {
         case 'schema':
           // Handle schema resources: bitbucket://schema/...
           console.error(`[ResourceHandlers] Handling schema resource: ${resourcePath || 'index'}`);
-          return await this.schemaHandlers.handleSchemaResource(uri);
+          const schemaResult = await this.schemaHandlers.handleSchemaResource(uri);
+          console.error(`[ResourceHandlers] Schema resource processed successfully`);
+          // Schema handlers already return the correct resource format, just wrap it
+          return {
+            contents: [schemaResult]
+          };
 
         case 'file':
           if (!resourcePath) {
