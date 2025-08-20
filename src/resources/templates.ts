@@ -6,9 +6,9 @@ import { ResourceTemplate } from '@modelcontextprotocol/sdk/types.js';
 // Resource URI design (scaffold):
 // - bitbucket://{workspace}/{repo}/file/{path}
 // - bitbucket://{workspace}/{repo}/dir/{path?}
-// - bitbucket://{workspace}/{repo}/pr/{id}
-// - bitbucket://{workspace}/{repo}/pr/{id}/diff{/{filePath?}}
-// - bitbucket://{workspace}/{repo}/pr/{id}/commits
+// - bitbucket://{workspace}/{repo}/pull-request/{id}
+// - bitbucket://{workspace}/{repo}/pull-request/{id}/diff{/{filePath?}}
+// - bitbucket://{workspace}/{repo}/pull-request/{id}/commits
 // - bitbucket://{workspace}/{repo}/branch/{name}
 // - bitbucket://{workspace}/{repo}/branches
 // Only templates are declared now; ReadResource returns placeholder until Stage 2.
@@ -16,7 +16,7 @@ import { ResourceTemplate } from '@modelcontextprotocol/sdk/types.js';
 export const resourceTemplates: ResourceTemplate[] = [
   {
     uriTemplate: 'bitbucket://{workspace}/{repo}/file/{path}',
-    name: 'repository_file',
+    name: 'repository-file',
     description: 'Single file content from a repository with optional field filtering and content slicing',
     inputSchema: {
       type: 'object',
@@ -37,7 +37,7 @@ export const resourceTemplates: ResourceTemplate[] = [
   },
   {
     uriTemplate: 'bitbucket://{workspace}/{repo}/dir/{path?}',
-    name: 'repository_directory',
+    name: 'repository-directory',
     description: 'Directory listing with optional path and field filtering support',
     inputSchema: {
       type: 'object',
@@ -54,8 +54,8 @@ export const resourceTemplates: ResourceTemplate[] = [
     },
   },
   {
-    uriTemplate: 'bitbucket://{workspace}/{repo}/pr/{id}',
-    name: 'pull_request',
+    uriTemplate: 'bitbucket://{workspace}/{repo}/pull-request/{id}',
+    name: 'pull-request',
     description: 'Pull request metadata and detailed information with field filtering support',
     inputSchema: {
       type: 'object',
@@ -73,8 +73,8 @@ export const resourceTemplates: ResourceTemplate[] = [
     },
   },
   {
-    uriTemplate: 'bitbucket://{workspace}/{repo}/pr/{id}/diff',
-    name: 'pull_request_diff',
+    uriTemplate: 'bitbucket://{workspace}/{repo}/pull-request/{id}/diff',
+    name: 'pull-request-diff',
     description: 'Full pull request diff with filtering and formatting options',
     inputSchema: {
       type: 'object',
@@ -93,8 +93,8 @@ export const resourceTemplates: ResourceTemplate[] = [
     },
   },
   {
-    uriTemplate: 'bitbucket://{workspace}/{repo}/pr/{id}/diff/{filePath}',
-    name: 'pull_request_diff_file',
+    uriTemplate: 'bitbucket://{workspace}/{repo}/pull-request/{id}/diff/{filePath}',
+    name: 'pull-request-diff-file',
     description: 'Single file diff within a pull request with enhanced formatting and field filtering',
     inputSchema: {
       type: 'object',
@@ -113,8 +113,8 @@ export const resourceTemplates: ResourceTemplate[] = [
     },
   },
   {
-    uriTemplate: 'bitbucket://{workspace}/{repo}/pr/{id}/commits',
-    name: 'pull_request_commits',
+    uriTemplate: 'bitbucket://{workspace}/{repo}/pull-request/{id}/commits',
+    name: 'pull-request-commits',
     description: 'Commits that belong to a pull request with metadata, changes and field filtering',
     inputSchema: {
       type: 'object',
@@ -134,7 +134,7 @@ export const resourceTemplates: ResourceTemplate[] = [
   },
   {
     uriTemplate: 'bitbucket://{workspace}/{repo}/branches',
-    name: 'repository_branches',
+    name: 'repository-branches',
     description: 'List all branches in the repository with metadata and field filtering',
     inputSchema: {
       type: 'object',
@@ -153,7 +153,7 @@ export const resourceTemplates: ResourceTemplate[] = [
   },
   {
     uriTemplate: 'bitbucket://{workspace}/{repo}/branch/{name}',
-    name: 'repository_branch',
+    name: 'repository-branch',
     description: 'Detailed information about a specific branch with field filtering support',
     inputSchema: {
       type: 'object',
@@ -172,7 +172,7 @@ export const resourceTemplates: ResourceTemplate[] = [
   },
   {
     uriTemplate: 'bitbucket://{workspace}/{repo}/search',
-    name: 'repository_search',
+    name: 'repository-search',
     description: 'Search code within the repository with field filtering support',
     inputSchema: {
       type: 'object',
@@ -192,8 +192,8 @@ export const resourceTemplates: ResourceTemplate[] = [
     },
   },
   {
-    uriTemplate: 'bitbucket://{workspace}/{repo}/prs',
-    name: 'pull_requests_list',
+    uriTemplate: 'bitbucket://{workspace}/{repo}/pull-requests',
+    name: 'pull-requests-list',
     description: 'List pull requests with filtering, pagination and field filtering options',
     inputSchema: {
       type: 'object',
@@ -235,7 +235,7 @@ export const resourceTemplates: ResourceTemplate[] = [
   },
   {
     uriTemplate: 'bitbucket://schema/{resource_type}',
-    name: 'resource_schema',
+    name: 'resource-schema',
     description: 'Get complete field schema for a specific Bitbucket resource type. Returns detailed information about all fields including types, descriptions, examples, and validation rules. Use this after discovering resource types from the index to understand how to work with specific resources and build intelligent field selectors.',
     inputSchema: {
       type: 'object',
@@ -264,7 +264,7 @@ export const resourceTemplates: ResourceTemplate[] = [
   },
   {
     uriTemplate: 'bitbucket://schema/{resource_type}/field/{field_name}',
-    name: 'field_schema',
+    name: 'field-schema',
     description: 'Get detailed schema information for a specific field of a resource type',
     inputSchema: {
       type: 'object',
@@ -287,7 +287,7 @@ export const resourceTemplates: ResourceTemplate[] = [
   },
   {
     uriTemplate: 'bitbucket://schema/validation/{resource_type}',
-    name: 'resource_validation',
+    name: 'resource-validation',
     description: 'Get validation rules and constraints for a specific resource type',
     inputSchema: {
       type: 'object',

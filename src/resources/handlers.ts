@@ -83,13 +83,24 @@ export class ResourceHandlers {
    * Handle resource read requests by delegating to appropriate handlers
    */
   async handleResourceRead(uri: string): Promise<any> {
+    console.error(`[ResourceHandlers] Starting resource read for URI: ${uri}`);
+    
     try {
       const parsed = this.parseResourceUri(uri);
       const { workspace, repo, resourceType, resourcePath, params } = parsed;
+      
+      console.error(`[ResourceHandlers] Parsed URI:`, {
+        workspace,
+        repo,
+        resourceType,
+        resourcePath,
+        params: Object.keys(params).length > 0 ? params : 'none'
+      });
 
       switch (resourceType) {
         case 'schema':
           // Handle schema resources: bitbucket://schema/...
+          console.error(`[ResourceHandlers] Handling schema resource: ${resourcePath || 'index'}`);
           return await this.schemaHandlers.handleSchemaResource(uri);
 
         case 'file':
@@ -99,6 +110,7 @@ export class ResourceHandlers {
           if (!workspace || !repo) {
             throw new McpError(ErrorCode.InvalidParams, 'Workspace and repository are required for file resources');
           }
+          console.error(`[ResourceHandlers] Handling file resource: ${workspace}/${repo}/${resourcePath}`);
           const fileResult = await this.fileHandlers.handleGetFileContent({
             workspace,
             repository: repo,
@@ -108,27 +120,31 @@ export class ResourceHandlers {
             line_count: params.line_count ? parseInt(params.line_count) : undefined,
             full_content: params.full_content === 'true'
           });
+          console.error(`[ResourceHandlers] File resource processed successfully`);
           return this.convertToolResponseToResource(uri, fileResult);
 
         case 'dir':
           if (!workspace || !repo) {
             throw new McpError(ErrorCode.InvalidParams, 'Workspace and repository are required for directory resources');
           }
+          console.error(`[ResourceHandlers] Handling directory resource: ${workspace}/${repo}/${resourcePath || 'root'}`);
           const dirResult = await this.fileHandlers.handleListDirectoryContent({
             workspace,
             repository: repo,
             path: resourcePath,
             branch: params.ref
           });
+          console.error(`[ResourceHandlers] Directory resource processed successfully`);
           return this.convertToolResponseToResource(uri, dirResult);
 
-        case 'pr':
+        case 'pull-request':
           if (resourcePath === 'diff') {
-            // PR diff: bitbucket://workspace/repo/pr/123/diff
-            const prId = params.id || (uri.match(/\/pr\/(\d+)\/diff/) || [])[1];
+            // PR diff: bitbucket://workspace/repo/pull-request/123/diff
+            const prId = params.id || (uri.match(/\/pull-request\/(\d+)\/diff/) || [])[1];
             if (!prId) {
               throw new McpError(ErrorCode.InvalidParams, 'PR ID is required for diff');
             }
+            console.error(`[ResourceHandlers] Handling PR diff resource: ${workspace}/${repo}/pull-request/${prId}/diff`);
             const diffResult = await this.reviewHandlers.handleGetPullRequestDiff({
               workspace,
               repository: repo,
@@ -138,13 +154,15 @@ export class ResourceHandlers {
               exclude_patterns: params.exclude,
               mode: params.mode
             });
+            console.error(`[ResourceHandlers] PR diff resource processed successfully`);
             return this.convertToolResponseToResource(uri, diffResult);
           } else if (resourcePath === 'commits') {
-            // PR commits: bitbucket://workspace/repo/pr/123/commits
-            const prId = params.id || (uri.match(/\/pr\/(\d+)\/commits/) || [])[1];
+            // PR commits: bitbucket://workspace/repo/pull-request/123/commits
+            const prId = params.id || (uri.match(/\/pull-request\/(\d+)\/commits/) || [])[1];
             if (!prId) {
               throw new McpError(ErrorCode.InvalidParams, 'PR ID is required for commits');
             }
+            console.error(`[ResourceHandlers] Handling PR commits resource: ${workspace}/${repo}/pull-request/${prId}/commits`);
             const commitsResult = await this.pullRequestHandlers.handleListPrCommits({
               workspace,
               repository: repo,
@@ -152,14 +170,16 @@ export class ResourceHandlers {
               start: params.start ? parseInt(params.start) : undefined,
               limit: params.limit ? parseInt(params.limit) : undefined
             });
+            console.error(`[ResourceHandlers] PR commits resource processed successfully`);
             return this.convertToolResponseToResource(uri, commitsResult);
           } else if (resourcePath?.startsWith('diff/')) {
-            // Single file diff: bitbucket://workspace/repo/pr/123/diff/path/to/file
-            const prId = params.id || (uri.match(/\/pr\/(\d+)\/diff/) || [])[1];
+            // Single file diff: bitbucket://workspace/repo/pull-request/123/diff/path/to/file
+            const prId = params.id || (uri.match(/\/pull-request\/(\d+)\/diff/) || [])[1];
             const filePath = resourcePath.substring(5); // Remove 'diff/' prefix
             if (!prId || !filePath) {
               throw new McpError(ErrorCode.InvalidParams, 'PR ID and file path are required');
             }
+            console.error(`[ResourceHandlers] Handling PR file diff resource: ${workspace}/${repo}/pull-request/${prId}/diff/${filePath}`);
             const fileDiffResult = await this.reviewHandlers.handleGetPullRequestDiff({
               workspace,
               repository: repo,
@@ -168,22 +188,26 @@ export class ResourceHandlers {
               context: params.context ? parseInt(params.context) : undefined,
               mode: params.mode
             });
+            console.error(`[ResourceHandlers] PR file diff resource processed successfully`);
             return this.convertToolResponseToResource(uri, fileDiffResult);
           } else {
-            // PR details: bitbucket://workspace/repo/pr/123
+            // PR details: bitbucket://workspace/repo/pull-request/123
             const prId = resourcePath || params.id;
             if (!prId) {
               throw new McpError(ErrorCode.InvalidParams, 'PR ID is required');
             }
+            console.error(`[ResourceHandlers] Handling PR details resource: ${workspace}/${repo}/pull-request/${prId}`);
             const prResult = await this.pullRequestHandlers.handleGetPullRequest({
               workspace,
               repository: repo,
               pull_request_id: parseInt(prId)
             });
+            console.error(`[ResourceHandlers] PR details resource processed successfully`);
             return this.convertToolResponseToResource(uri, prResult);
           }
 
         case 'branches':
+          console.error(`[ResourceHandlers] Handling branches list resource: ${workspace}/${repo}/branches`);
           const branchesResult = await this.branchHandlers.handleListBranches({
             workspace,
             repository: repo,
@@ -191,23 +215,27 @@ export class ResourceHandlers {
             limit: params.limit ? parseInt(params.limit) : undefined,
             start: params.start ? parseInt(params.start) : undefined
           });
+          console.error(`[ResourceHandlers] Branches list resource processed successfully`);
           return this.convertToolResponseToResource(uri, branchesResult);
 
         case 'branch':
           if (!resourcePath) {
             throw new McpError(ErrorCode.InvalidParams, 'Branch name is required');
           }
+          console.error(`[ResourceHandlers] Handling branch details resource: ${workspace}/${repo}/branch/${resourcePath}`);
           const branchResult = await this.branchHandlers.handleGetBranch({
             workspace,
             repository: repo,
             branch_name: resourcePath
           });
+          console.error(`[ResourceHandlers] Branch details resource processed successfully`);
           return this.convertToolResponseToResource(uri, branchResult);
 
         case 'search':
           if (!params.query) {
             throw new McpError(ErrorCode.InvalidParams, 'Search query is required');
           }
+          console.error(`[ResourceHandlers] Handling search resource: ${workspace}/${repo}/search?query=${params.query}`);
           const searchResult = await this.searchHandlers.handleSearchCode({
             workspace,
             repository: repo,
@@ -217,9 +245,11 @@ export class ResourceHandlers {
             exclude_paths: params.exclude_paths,
             limit: params.limit ? parseInt(params.limit) : undefined
           });
+          console.error(`[ResourceHandlers] Search resource processed successfully`);
           return this.convertToolResponseToResource(uri, searchResult);
 
-        case 'prs':
+        case 'pull-requests':
+          console.error(`[ResourceHandlers] Handling PRs list resource: ${workspace}/${repo}/pull-requests with state=${params.state || 'OPEN'}`);
           const prsResult = await this.pullRequestHandlers.handleListPullRequests({
             workspace,
             repository: repo,
@@ -229,18 +259,36 @@ export class ResourceHandlers {
             limit: params.limit ? parseInt(params.limit) : 25,
             start: params.start ? parseInt(params.start) : 0
           });
+          console.error(`[ResourceHandlers] PRs list resource processed successfully`);
           return this.convertToolResponseToResource(uri, prsResult);
 
+        // Backward compatibility cases
+        case 'pr':
+          // Redirect to pull-request handler for backward compatibility
+          console.error(`[ResourceHandlers] Redirecting legacy 'pr' to 'pull-request' handler`);
+          return this.handleResourceRead(uri.replace('/pr/', '/pull-request/'));
+
+        case 'prs':
+          // Redirect to pull-requests handler for backward compatibility
+          console.error(`[ResourceHandlers] Redirecting legacy 'prs' to 'pull-requests' handler`);
+          return this.handleResourceRead(uri.replace('/prs', '/pull-requests'));
+
         default:
+          console.error(`[ResourceHandlers] Unknown resource type: ${resourceType}`);
           throw new McpError(
             ErrorCode.InvalidParams,
             `Unknown resource type: ${resourceType}`
           );
       }
     } catch (error) {
+      console.error(`[ResourceHandlers] Error processing resource URI: ${uri}`, error);
+      
       if (error instanceof McpError) {
+        console.error(`[ResourceHandlers] MCP Error - Code: ${error.code}, Message: ${error.message}`);
         throw error;
       }
+      
+      console.error(`[ResourceHandlers] Unexpected error:`, error instanceof Error ? error.message : error);
       
       // Convert API errors to MCP errors
       return {
