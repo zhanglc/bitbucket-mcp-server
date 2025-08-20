@@ -180,7 +180,7 @@ export const repositorySchema: ResourceSchema = {
  * Pull Request resource field schema
  */
 export const pullRequestSchema: ResourceSchema = {
-  type: 'pullrequest',
+  type: 'pull-request',
   description: 'Bitbucket pull request object with complete metadata',
   fields: [
     {
@@ -473,7 +473,7 @@ export const branchSchema: ResourceSchema = {
  * File/Directory resource field schema
  */
 export const fileSchema: ResourceSchema = {
-  type: 'commit_file',
+  type: 'commit-file',
   description: 'File or directory in a repository at a specific commit',
   fields: [
     {
@@ -1008,11 +1008,11 @@ export function getCommonFields(pattern: keyof typeof commonFieldSets): string[]
 export const resourceCategories = {
   core: {
     description: 'Core Bitbucket resources essential for most operations',
-    types: ['repository', 'pullrequest', 'commit', 'branch', 'user']
+    types: ['repository', 'pull-request', 'commit', 'branch', 'user']
   },
   extended: {
     description: 'Extended resources for advanced functionality',
-    types: ['issue', 'project', 'pullrequest_comment', 'commit_comment', 'issue_comment', 'commit_file', 'commit_directory']
+    types: ['issue', 'project', 'pull-request-comment', 'commit-comment', 'issue-comment', 'commit-file', 'commit-directory']
   }
 };
 
