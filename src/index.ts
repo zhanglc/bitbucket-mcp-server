@@ -110,10 +110,21 @@ export class BitbucketMCPServer {
       tools: toolDefinitions,
     }));
 
-    // List available static resources (MCP compliant)
+    // List available resources (combines static resources and templates)
     this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
+      // Convert resource templates to resource entries for discovery
+      const templateResources = resourceTemplates.map(template => ({
+        uri: template.uriTemplate,
+        name: template.name,
+        description: template.description,
+        mimeType: 'application/json'
+      }));
+
       return {
-        resources: staticResources
+        resources: [
+          ...staticResources,
+          ...templateResources
+        ]
       };
     });
 
