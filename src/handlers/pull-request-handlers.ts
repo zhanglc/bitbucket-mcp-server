@@ -3,6 +3,7 @@ import { BitbucketApiClient } from '../utils/api-client.js';
 import { formatServerResponse, formatCloudResponse, formatServerCommit, formatCloudCommit } from '../utils/formatters.js';
 import { formatSuggestionComment } from '../utils/suggestion-formatter.js';
 import { DiffParser } from '../utils/diff-parser.js';
+import { applyFieldsFilter } from '../utils/field-filter.js';
 import { 
   BitbucketServerPullRequest, 
   BitbucketCloudPullRequest, 
@@ -176,7 +177,7 @@ export class PullRequestHandlers {
       );
     }
 
-    const { workspace, repository, state = 'OPEN', author, reviewer, limit = 25, start = 0 } = args;
+    const { workspace, repository, state = 'OPEN', author, reviewer, limit = 25, start = 0, fields } = args;
 
     try {
       let apiPath: string;
@@ -252,12 +253,15 @@ export class PullRequestHandlers {
         }
       }
 
+      // Apply field filtering if specified
+      const filteredPullRequests = applyFieldsFilter(pullRequests, fields);
+
       return {
         content: [
           {
             type: 'text',
             text: JSON.stringify({
-              pull_requests: pullRequests,
+              pull_requests: filteredPullRequests,
               total_count: totalCount,
               start,
               limit,

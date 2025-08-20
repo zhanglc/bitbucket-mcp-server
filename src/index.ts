@@ -4,14 +4,14 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   CallToolRequestSchema,
   ErrorCode,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
   ListToolsRequestSchema,
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 
-// Import package.json version safely for ESM
-import { readFileSync } from 'fs';
-const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
-const version = pkg.version;
+// TODO: Read version from package.json when not in test environment
+const version = '1.0.12';
 
 import { BitbucketApiClient } from './utils/api-client.js';
 import { PullRequestHandlers } from './handlers/pull-request-handlers.js';
@@ -19,6 +19,7 @@ import { BranchHandlers } from './handlers/branch-handlers.js';
 import { ReviewHandlers } from './handlers/review-handlers.js';
 import { FileHandlers } from './handlers/file-handlers.js';
 import { SearchHandlers } from './handlers/search-handlers.js';
+import { ResourceHandlers } from './handlers/resource-handlers.js';
 import { toolDefinitions } from './tools/definitions.js';
 
 // Get environment variables
@@ -42,6 +43,7 @@ export class BitbucketMCPServer {
   private reviewHandlers: ReviewHandlers;
   private fileHandlers: FileHandlers;
   private searchHandlers: SearchHandlers;
+  private resourceHandlers: ResourceHandlers;
 
   constructor() {
     this.server = new Server(
@@ -52,6 +54,7 @@ export class BitbucketMCPServer {
       {
         capabilities: {
           tools: {},
+          resources: {},
         },
       }
     );
@@ -74,9 +77,11 @@ export class BitbucketMCPServer {
     this.reviewHandlers = new ReviewHandlers(this.apiClient, BITBUCKET_USERNAME!);
     this.fileHandlers = new FileHandlers(this.apiClient, BITBUCKET_BASE_URL);
     this.searchHandlers = new SearchHandlers(this.apiClient, BITBUCKET_BASE_URL);
+    this.resourceHandlers = new ResourceHandlers();
 
 
     this.setupToolHandlers();
+    this.setupResourceHandlers();
 
     // Error handling
     this.server.onerror = (error) => console.error('[MCP Error]', error);
@@ -153,6 +158,38 @@ export class BitbucketMCPServer {
     });
   }
 
+  private setupResourceHandlers() {
+    // List available resources and templates
+    this.server.setRequestHandler(ListResourcesRequestSchema, async () => 
+      this.resourceHandlers.listResources()
+    );
+
+    // Read resource content
+    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) =>
+      this.resourceHandlers.readResource(request.params.uri)
+    );
+  }
+
+  // Public methods for testing
+  getCapabilities() {
+    return {
+      tools: {},
+      resources: {}
+    };
+  }
+
+  async listTools() {
+    return { tools: toolDefinitions };
+  }
+
+  async listResources() {
+    return this.resourceHandlers.listResources();
+  }
+
+
+  async readResource(uri: string) {
+    return this.resourceHandlers.readResource(uri);
+  }
 
   async run() {
     const transport = new StdioServerTransport();

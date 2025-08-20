@@ -56,6 +56,10 @@ export const toolDefinitions = [
           type: 'number',
           description: 'Start index for pagination (default: 0)',
         },
+        fields: {
+          type: 'string',
+          description: 'Comma-separated list of fields to return (e.g., "id,title,state,author,reviewers.name"). Supports dot notation for nested fields. If not specified, returns all fields.',
+        },
       },
       required: ['workspace', 'repository'],
     },
