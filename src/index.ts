@@ -7,6 +7,7 @@ import {
   ListToolsRequestSchema,
   McpError,
   ListResourcesRequestSchema,
+  ListResourceTemplatesRequestSchema,
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
@@ -118,7 +119,13 @@ class BitbucketMCPServer {
             description: 'Index of all available Bitbucket resource types',
             mimeType: 'application/json'
           }
-        ],
+        ]
+      };
+    });
+
+    // List available resource templates
+    this.server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
+      return {
         resourceTemplates: resourceTemplates,
       };
     });
