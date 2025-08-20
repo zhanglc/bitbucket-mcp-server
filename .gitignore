@@ -33,6 +33,9 @@ yarn-error.log*
 test-api.js
 *.test.js
 
+# Coverage reports
+coverage/
+
 # Temporary files
 *.tmp
 *.temp

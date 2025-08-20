@@ -18,7 +18,6 @@ tests/
 ### Unit Tests (`tests/unit/`)
 Test individual functions and utilities in isolation:
 - `utils/formatters.test.ts` - Response formatting functions
-- `utils/bitbucket-uri.test.ts` - URI parsing and validation
 - `tools/definitions.test.ts` - Tool schema validation
 
 ### Integration Tests (`tests/integration/`)

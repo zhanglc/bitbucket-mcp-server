@@ -6,9 +6,6 @@ import {
   ErrorCode,
   ListToolsRequestSchema,
   McpError,
-  ListResourcesRequestSchema,
-  ListResourceTemplatesRequestSchema,
-  ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
 // Import package.json version safely for ESM
@@ -23,10 +20,6 @@ import { ReviewHandlers } from './handlers/review-handlers.js';
 import { FileHandlers } from './handlers/file-handlers.js';
 import { SearchHandlers } from './handlers/search-handlers.js';
 import { toolDefinitions } from './tools/definitions.js';
-import { resourceTemplates } from './resources/templates.js';
-import { staticResources } from './resources/static-resources.js';
-import { ResourceHandlers } from './resources/handlers.js';
-import { getResourceTypeIndex } from './resources/field-schemas.js';
 
 // Get environment variables
 const BITBUCKET_USERNAME = process.env.BITBUCKET_USERNAME;
@@ -49,7 +42,6 @@ export class BitbucketMCPServer {
   private reviewHandlers: ReviewHandlers;
   private fileHandlers: FileHandlers;
   private searchHandlers: SearchHandlers;
-  private resourceHandlers: ResourceHandlers;
 
   constructor() {
     this.server = new Server(
@@ -60,7 +52,6 @@ export class BitbucketMCPServer {
       {
         capabilities: {
           tools: {},
-          resources: {},
         },
       }
     );
@@ -84,15 +75,6 @@ export class BitbucketMCPServer {
     this.fileHandlers = new FileHandlers(this.apiClient, BITBUCKET_BASE_URL);
     this.searchHandlers = new SearchHandlers(this.apiClient, BITBUCKET_BASE_URL);
 
-    // Initialize resource handlers
-    this.resourceHandlers = new ResourceHandlers(
-      this.apiClient,
-      this.pullRequestHandlers,
-      this.branchHandlers,
-      this.fileHandlers,
-      this.searchHandlers,
-      this.reviewHandlers
-    );
 
     this.setupToolHandlers();
 
@@ -110,83 +92,6 @@ export class BitbucketMCPServer {
       tools: toolDefinitions,
     }));
 
-    // List available resources (combines static resources and templates)
-    this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
-      // Convert resource templates to resource entries for discovery
-      const templateResources = resourceTemplates.map(template => ({
-        uri: template.uriTemplate,
-        name: template.name,
-        description: template.description,
-        mimeType: 'application/json'
-      }));
-
-      return {
-        resources: [
-          ...staticResources,
-          ...templateResources
-        ]
-      };
-    });
-
-    // List available resource templates
-    this.server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
-      return {
-        resourceTemplates: resourceTemplates,
-      };
-    });
-
-    // Handle resource reads (Stage 2 implementation)
-    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-      try {
-        // Special handling for static schema index resource
-        if (request.params.uri === 'bitbucket://schema/index') {
-          // Static content - no query parameters supported
-          const index = getResourceTypeIndex();
-          
-          return {
-            contents: [
-              {
-                uri: request.params.uri,
-                mimeType: 'application/json',
-                text: JSON.stringify({
-                  schemaVersion: version,
-                  totalTypes: index.length,
-                  resourceTypes: index,
-                  note: 'This index contains static field schemas. For dynamic resource access patterns, use the resource templates via ListResourceTemplates.',
-                  usage: {
-                    fieldFiltering: "Add ?fields=field1,field2 to limit response fields",
-                    formatOptions: "Add ?format=minimal|summary|metadata for different detail levels",
-                    resourceTemplates: "Use ListResourceTemplates to discover dynamic resource patterns"
-                  },
-                  lastUpdated: new Date().toISOString()
-                }, null, 2),
-              },
-            ],
-          };
-        }
-        
-        const result = await this.resourceHandlers.handleResourceRead(request.params.uri);
-        return this.convertToolResponseToResource(request.params.uri, result);
-      } catch (error) {
-
-        // Fallback to placeholder for unimplemented resources
-        const uri = request.params.uri;
-        return {
-          contents: [
-            {
-              uri,
-              mimeType: 'application/json',
-              text: JSON.stringify({
-                error: 'Resource retrieval failed',
-                uri,
-                message: error instanceof Error ? error.message : 'Unknown error',
-                note: 'This resource may not be fully implemented yet'
-              }, null, 2),
-            },
-          ],
-        };
-      }
-    });
 
     // Handle tool calls
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -248,23 +153,6 @@ export class BitbucketMCPServer {
     });
   }
 
-
-  /**
-   * Convert tool response to resource response format
-   */
-  private convertToolResponseToResource(uri: string, toolResponse: any): any {
-    return {
-      contents: [
-        {
-          uri,
-          mimeType: 'application/json',
-          text: Array.isArray(toolResponse.content) 
-            ? toolResponse.content[0].text 
-            : JSON.stringify(toolResponse, null, 2),
-        },
-      ],
-    };
-  }
 
   async run() {
     const transport = new StdioServerTransport();
