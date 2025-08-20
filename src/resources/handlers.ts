@@ -93,30 +93,51 @@ export class ResourceHandlers {
           return this.convertToolResponseToResource(uri, dirResult);
 
         case 'pull-request':
-          if (resourcePath === 'diff') {
-            // PR diff: bitbucket://workspace/repo/pull-request/123/diff
-            const prId = params.id || (uri.match(/\/pull-request\/(\d+)\/diff/) || [])[1];
-            if (!prId) {
-              throw new McpError(ErrorCode.InvalidParams, 'PR ID is required for diff');
+          if (!resourcePath) {
+            throw new McpError(ErrorCode.InvalidParams, 'PR ID is required');
+          }
+          
+          // Parse hierarchical resource path: {id}/diff, {id}/commits, {id}/diff/{filePath}, or just {id}
+          const pathParts = resourcePath.split('/');
+          const prId = pathParts[0];
+          const subResource = pathParts[1];
+          const filePath = pathParts.slice(2).join('/');
+          
+          if (!prId || !/^\d+$/.test(prId)) {
+            throw new McpError(ErrorCode.InvalidParams, 'Valid PR ID is required');
+          }
+          
+          if (subResource === 'diff') {
+            if (filePath) {
+              // Single file diff: bitbucket://workspace/repo/pull-request/123/diff/path/to/file
+              console.error(`[ResourceHandlers] Handling PR file diff resource: ${workspace}/${repo}/pull-request/${prId}/diff/${filePath}`);
+              const fileDiffResult = await this.reviewHandlers.handleGetPullRequestDiff({
+                workspace,
+                repository: repo,
+                pull_request_id: parseInt(prId),
+                file_path: filePath,
+                context: params.context ? parseInt(params.context) : undefined,
+                mode: params.mode
+              });
+              console.error(`[ResourceHandlers] PR file diff resource processed successfully`);
+              return this.convertToolResponseToResource(uri, fileDiffResult);
+            } else {
+              // Full PR diff: bitbucket://workspace/repo/pull-request/123/diff
+              console.error(`[ResourceHandlers] Handling PR diff resource: ${workspace}/${repo}/pull-request/${prId}/diff`);
+              const diffResult = await this.reviewHandlers.handleGetPullRequestDiff({
+                workspace,
+                repository: repo,
+                pull_request_id: parseInt(prId),
+                context: params.context ? parseInt(params.context) : undefined,
+                include_patterns: params.include,
+                exclude_patterns: params.exclude,
+                mode: params.mode
+              });
+              console.error(`[ResourceHandlers] PR diff resource processed successfully`);
+              return this.convertToolResponseToResource(uri, diffResult);
             }
-            console.error(`[ResourceHandlers] Handling PR diff resource: ${workspace}/${repo}/pull-request/${prId}/diff`);
-            const diffResult = await this.reviewHandlers.handleGetPullRequestDiff({
-              workspace,
-              repository: repo,
-              pull_request_id: parseInt(prId),
-              context: params.context ? parseInt(params.context) : undefined,
-              include_patterns: params.include,
-              exclude_patterns: params.exclude,
-              mode: params.mode
-            });
-            console.error(`[ResourceHandlers] PR diff resource processed successfully`);
-            return this.convertToolResponseToResource(uri, diffResult);
-          } else if (resourcePath === 'commits') {
+          } else if (subResource === 'commits') {
             // PR commits: bitbucket://workspace/repo/pull-request/123/commits
-            const prId = params.id || (uri.match(/\/pull-request\/(\d+)\/commits/) || [])[1];
-            if (!prId) {
-              throw new McpError(ErrorCode.InvalidParams, 'PR ID is required for commits');
-            }
             console.error(`[ResourceHandlers] Handling PR commits resource: ${workspace}/${repo}/pull-request/${prId}/commits`);
             const commitsResult = await this.pullRequestHandlers.handleListPrCommits({
               workspace,
@@ -127,30 +148,11 @@ export class ResourceHandlers {
             });
             console.error(`[ResourceHandlers] PR commits resource processed successfully`);
             return this.convertToolResponseToResource(uri, commitsResult);
-          } else if (resourcePath?.startsWith('diff/')) {
-            // Single file diff: bitbucket://workspace/repo/pull-request/123/diff/path/to/file
-            const prId = params.id || (uri.match(/\/pull-request\/(\d+)\/diff/) || [])[1];
-            const filePath = resourcePath.substring(5); // Remove 'diff/' prefix
-            if (!prId || !filePath) {
-              throw new McpError(ErrorCode.InvalidParams, 'PR ID and file path are required');
-            }
-            console.error(`[ResourceHandlers] Handling PR file diff resource: ${workspace}/${repo}/pull-request/${prId}/diff/${filePath}`);
-            const fileDiffResult = await this.reviewHandlers.handleGetPullRequestDiff({
-              workspace,
-              repository: repo,
-              pull_request_id: parseInt(prId),
-              file_path: filePath,
-              context: params.context ? parseInt(params.context) : undefined,
-              mode: params.mode
-            });
-            console.error(`[ResourceHandlers] PR file diff resource processed successfully`);
-            return this.convertToolResponseToResource(uri, fileDiffResult);
+          } else if (subResource) {
+            // Unknown sub-resource
+            throw new McpError(ErrorCode.InvalidParams, `Unknown pull request sub-resource: ${subResource}`);
           } else {
             // PR details: bitbucket://workspace/repo/pull-request/123
-            const prId = resourcePath || params.id;
-            if (!prId) {
-              throw new McpError(ErrorCode.InvalidParams, 'PR ID is required');
-            }
             console.error(`[ResourceHandlers] Handling PR details resource: ${workspace}/${repo}/pull-request/${prId}`);
             const prResult = await this.pullRequestHandlers.handleGetPullRequest({
               workspace,
